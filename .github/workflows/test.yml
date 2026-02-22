@@ -1,40 +1,38 @@
-name: Test Yolk Integrity
+name: Test Yolk Integirty
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-yolk:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Build Local Image
-        run: docker build -t local-test-yolk .
+        run: docker build -t local-yolk .
 
-      - name: System Identity & Permission Test
+      - name: Test - System Info & Identity
         run: |
-          echo "--- Testing Identity ---"
-          docker run --rm local-test-yolk whoami
-          docker run --rm local-test-yolk id
-          
-      - name: Version Check - Node, Python, FFmpeg
-        run: |
-          echo "--- Testing Runtimes ---"
-          docker run --rm local-test-yolk node -v
-          docker run --rm local-test-yolk npm -v
-          docker run --rm local-test-yolk python3 --version
-          docker run --rm local-test-yolk pip3 --version
-          docker run --rm local-test-yolk ffmpeg -version | head -n 1
+          docker run --rm \
+            -e STARTUP="whoami && id && sudo apt update && sudo apt install -y neofetch && neofetch --off" \
+            local-yolk
 
-      - name: Sudo & Dynamic Install Test
+      - name: Test - Node.js & NPM
         run: |
-          echo "--- Testing Sudo & Neofetch ---"
-          docker run --rm local-test-yolk /bin/bash -c "sudo apt update && sudo apt install -y neofetch && neofetch --off"
+          docker run --rm \
+            -e STARTUP="node -v && npm -v" \
+            local-yolk
 
-      - name: Pterodactyl Variable Simulation
+      - name: Test - Python & Pip
         run: |
-          echo "--- Testing Entrypoint Logic ---"
-          # This ensures your sed logic actually executes the STARTUP variable
-          docker run --rm -e STARTUP="echo 'Hello from Pterodactyl!'" local-test-yolk
+          docker run --rm \
+            -e STARTUP="python3 --version && pip3 --version" \
+            local-yolk
+
+      - name: Test - FFmpeg
+        run: |
+          docker run --rm \
+            -e STARTUP="ffmpeg -version | head -n 1" \
+            local-yolk
