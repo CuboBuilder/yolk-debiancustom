@@ -20,4 +20,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: cubobuilder/custom-yolk:latest
+          tags: cubobuilder/nebula-yolk:latest
