@@ -1,4 +1,4 @@
-name: Build Custom Yolk
+name: Build Nebula Yolk
 
 on: workflow_dispatch 
 
