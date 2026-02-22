@@ -1,27 +1,40 @@
-name: Debug Yolk via SSH
-on: workflow_dispatch
+name: Test Yolk Integrity
+
+on:
+  workflow_dispatch:
 
 jobs:
-  debug:
+  test-yolk:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Start Custom Yolk
-        run: |
-          docker run -d --name test-container \
-            -e STARTUP="sleep infinity" \
-            -p 2222:22 \
-            cubobuilder/custom-yolk:latest
-          
-      - name: Setup Cloudflared Tunnel
-        id: tunnel
-        run: |
-          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared-linux-amd64.deb
-          cloudflared tunnel --url tcp://localhost:2222 &
-          sleep 5
+      - name: Build Local Image
+        run: docker build -t local-test-yolk .
 
-      - name: Keep Alive
-        run: sleep 3600
+      - name: System Identity & Permission Test
+        run: |
+          echo "--- Testing Identity ---"
+          docker run --rm local-test-yolk whoami
+          docker run --rm local-test-yolk id
+          
+      - name: Version Check - Node, Python, FFmpeg
+        run: |
+          echo "--- Testing Runtimes ---"
+          docker run --rm local-test-yolk node -v
+          docker run --rm local-test-yolk npm -v
+          docker run --rm local-test-yolk python3 --version
+          docker run --rm local-test-yolk pip3 --version
+          docker run --rm local-test-yolk ffmpeg -version | head -n 1
+
+      - name: Sudo & Dynamic Install Test
+        run: |
+          echo "--- Testing Sudo & Neofetch ---"
+          docker run --rm local-test-yolk /bin/bash -c "sudo apt update && sudo apt install -y neofetch && neofetch --off"
+
+      - name: Pterodactyl Variable Simulation
+        run: |
+          echo "--- Testing Entrypoint Logic ---"
+          # This ensures your sed logic actually executes the STARTUP variable
+          docker run --rm -e STARTUP="echo 'Hello from Pterodactyl!'" local-test-yolk
